@@ -6,6 +6,3 @@ link:
 
 test:
 	npx jest
-
-coverage:
-	npx jest --coverage
