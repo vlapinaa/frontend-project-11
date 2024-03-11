@@ -1,1 +1,11 @@
 @import "bootstrap/scss/bootstrap";
+
+a {
+    &:visited {
+        color: gray;
+    }
+}
+
+.fw-normal {
+    color: gray;
+}
