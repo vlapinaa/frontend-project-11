@@ -69,34 +69,36 @@ const form = document.querySelector('form');
 input.focus();
 
 const updatePosts = () => {
-  setTimeout(updatePosts, 5000);
+  if (state.status === 'sent') {
+    setTimeout(updatePosts, 5000);
 
-  state.data.feeds.forEach((feed) => {
-    parseRSS(feed).then((xmlDocument) => {
-      const items = xmlDocument.querySelectorAll('item');
-      const newPosts = [];
+    state.data.feeds.forEach((feed) => {
+      parseRSS(feed).then((xmlDocument) => {
+        const items = xmlDocument.querySelectorAll('item');
+        const newPosts = [];
 
-      const itemsArray = Array.from(items);
-      const lastPost = state.data.content[feed].posts[0];
-      const lastPostDate = new Date(lastPost.publicationDate);
+        const itemsArray = Array.from(items);
+        const lastPost = state.data.content[feed].posts[0];
+        const lastPostDate = new Date(lastPost.publicationDate);
 
-      for (const item of itemsArray) {
-        const pubDate = new Date(item.querySelector('pubDate').textContent);
+        for (const item of itemsArray) {
+          const pubDate = new Date(item.querySelector('pubDate').textContent);
 
-        if (lastPostDate.getTime() >= pubDate.getTime()) {
-          break;
+          if (lastPostDate.getTime() >= pubDate.getTime()) {
+            break;
+          }
+
+          const post = transformXmlItem(feed, item);
+          newPosts.push(post);
+
+          const containerPost = document.getElementById('posts');
+          containerPost.prepend(generatePost(post));
         }
 
-        const post = transformXmlItem(feed, item);
-        newPosts.push(post);
-
-        const containerPost = document.getElementById('posts');
-        containerPost.prepend(generatePost(post));
-      }
-
-      state.data.content[feed].posts = [...newPosts.reverse(), ...state.data.content[feed].posts];
+        state.data.content[feed].posts = [...newPosts.reverse(), ...state.data.content[feed].posts];
+      });
     });
-  });
+  }
 };
 
 form.addEventListener('submit', (e) => {
