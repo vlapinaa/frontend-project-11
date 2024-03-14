@@ -6,6 +6,16 @@ const errorMessage = document.getElementById('rssError');
 const successMessage = document.getElementById('rssSuccess');
 const submit = document.querySelector('button[type="submit"]');
 
+const state = {
+  // error loading success waiting
+  status: 'waiting',
+  data: {
+    feeds: [],
+    content: {},
+  },
+  error: '',
+};
+
 const handleErrors = (error) => {
   input.classList.remove('is-invalid');
   errorMessage.classList.remove('d-block');
@@ -22,28 +32,33 @@ const handleSuccess = (status) => {
   successMessage.classList.remove('d-block');
   successMessage.classList.add('d-none');
 
-  if (status === 'sent') {
+  if (status === 'success') {
     successMessage.classList.remove('d-none');
     successMessage.classList.add('d-block');
   }
 };
 
-export default (state) => onChange(state, (path, value) => {
+const watchedState = onChange(state, (path, value) => {
   handleErrors(state.error);
   handleSuccess(state.status);
   const buttonSent = document.querySelector('span[role="status"]');
   submit.disabled = false;
-  if (state.status === 'sending') {
+
+  if (state.status === 'loading') {
     submit.disabled = true;
     document.getElementById('spiner').classList.remove('d-none');
     buttonSent.textContent = i18next.t('submitSpiner');
   }
-  if (state.status === 'sent') {
+
+  if (state.status === 'success') {
     document.getElementById('spiner').classList.add('d-none');
     buttonSent.textContent = i18next.t('submitButton');
   }
+
   if (state.data.feeds.length !== 0) {
     document.getElementById('postH2').classList.remove('d-none');
     document.getElementById('feedH2').classList.remove('d-none');
   }
 });
+
+export default watchedState;

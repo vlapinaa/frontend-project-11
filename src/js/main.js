@@ -4,7 +4,7 @@ import i18next from 'i18next';
 import * as bootstrap from 'bootstrap';
 import { generatePosts, generateFeeds, generatePost } from './generation';
 import { parseRSS } from './parsing';
-import createWatchedState from './view';
+import watchedState from './view';
 import { transformXmlItem } from './helpers';
 
 i18next.init({
@@ -35,18 +35,6 @@ i18next.init({
   document.getElementById('rssSuccess').textContent = t('successMessage');
 });
 
-const state = {
-  // filling sending sent
-  status: 'filling',
-  data: {
-    feeds: [],
-    content: {},
-  },
-  error: '',
-};
-
-const watchedState = createWatchedState(state);
-
 const shemaUrl = yup.object({
   url: yup.string()
     .required(i18next.t('errors.requiredUrl'))
@@ -55,7 +43,7 @@ const shemaUrl = yup.object({
       name: 'is-url-added',
       skipAbsent: false,
       test(value, context) {
-        if (state.data.feeds.includes(value)) {
+        if (watchedState.data.feeds.includes(value)) {
           return context.createError({ message: i18next.t('errors.duplicatedUrl') });
         }
         return true;
@@ -69,36 +57,46 @@ const form = document.querySelector('form');
 input.focus();
 
 const updatePosts = () => {
-  if (state.status === 'sent') {
-    setTimeout(updatePosts, 5000);
-
-    state.data.feeds.forEach((feed) => {
-      parseRSS(feed).then((xmlDocument) => {
-        const items = xmlDocument.querySelectorAll('item');
-        const newPosts = [];
-
-        const itemsArray = Array.from(items);
-        const lastPost = state.data.content[feed].posts[0];
-        const lastPostDate = new Date(lastPost.publicationDate);
-
-        for (const item of itemsArray) {
-          const pubDate = new Date(item.querySelector('pubDate').textContent);
-
-          if (lastPostDate.getTime() >= pubDate.getTime()) {
-            break;
-          }
-
-          const post = transformXmlItem(feed, item);
-          newPosts.push(post);
-
-          const containerPost = document.getElementById('posts');
-          containerPost.prepend(generatePost(post));
-        }
-
-        state.data.content[feed].posts = [...newPosts.reverse(), ...state.data.content[feed].posts];
-      });
-    });
+  if (watchedState.status !== 'success') {
+    return;
   }
+
+  setTimeout(updatePosts, 5000);
+  watchedState.status = 'updating';
+
+  const handleFeed = (feed) => parseRSS(feed).then((xmlDocument) => {
+    const items = xmlDocument.querySelectorAll('item');
+
+    const newPosts = [];
+
+    const itemsArray = Array.from(items);
+    const lastPost = watchedState.data.content[feed].posts[0];
+    const lastPostDate = new Date(lastPost.publicationDate);
+
+    for (const item of itemsArray) {
+      const pubDate = new Date(item.querySelector('pubDate').textContent);
+      if (lastPostDate.getTime() >= pubDate.getTime()) {
+        break;
+      }
+
+      const post = transformXmlItem(feed, item);
+      newPosts.push(post);
+
+      const containerPost = document.getElementById('posts');
+      containerPost.prepend(generatePost(post));
+    }
+
+    watchedState.data.content[feed].posts = [
+      ...newPosts.reverse(),
+      ...watchedState.data.content[feed].posts,
+    ];
+  });
+
+  const feedsPromises = watchedState.data.feeds.map((feed) => handleFeed(feed));
+
+  Promise.all(feedsPromises).finally(() => {
+    watchedState.status = 'success';
+  });
 };
 
 form.addEventListener('submit', (e) => {
@@ -108,7 +106,7 @@ form.addEventListener('submit', (e) => {
 
   shemaUrl.validate({ url: inputUrl })
     .then(() => {
-      watchedState.status = 'sending';
+      watchedState.status = 'loading';
       parseRSS(inputUrl).then((xmlDocument) => {
         const items = xmlDocument.querySelectorAll('item');
 
@@ -118,7 +116,7 @@ form.addEventListener('submit', (e) => {
           posts: Array.from(items).map((item) => transformXmlItem(inputUrl, item)),
         };
 
-        state.data.content[inputUrl] = feed;
+        watchedState.data.content[inputUrl] = feed;
 
         generatePosts(feed);
         generateFeeds(feed);
@@ -127,11 +125,11 @@ form.addEventListener('submit', (e) => {
         form.reset();
         watchedState.data.feeds.push(inputUrl);
         watchedState.error = '';
-        watchedState.status = 'sent';
+        watchedState.status = 'success';
       })
         .catch((error) => {
           if (error.name === 'incorrectRSS') {
-            watchedState.status = 'filling';
+            watchedState.status = 'error';
             watchedState.error = i18next.t('errors.incorrectRSS');
             return;
           }
@@ -139,9 +137,7 @@ form.addEventListener('submit', (e) => {
         });
     })
     .catch((err) => {
-      watchedState.status = 'filling';
+      watchedState.status = 'error';
       watchedState.error = err.message;
     });
 });
-
-updatePosts();
