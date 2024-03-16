@@ -1,11 +1,12 @@
-import '../scss/styles.scss';
+import 'bootstrap';
 import * as yup from 'yup';
 import i18next from 'i18next';
-import * as bootstrap from 'bootstrap';
+import axios from 'axios';
+
+import '../scss/styles.scss';
 import { generatePosts, generateFeeds, generatePost } from './generation';
 import { parseRSS } from './parsing';
 import watchedState from './view';
-import { transformXmlItem } from './helpers';
 
 i18next.init({
   lng: 'ru',
@@ -51,51 +52,47 @@ const shemaUrl = yup.object({
     }),
 });
 
-const input = document.querySelector('input[name="url"]');
+const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
+  params: {
+    url,
+  },
+})
+  .then((response) => response.data);
+
 const form = document.querySelector('form');
 
-input.focus();
-
-const updatePosts = () => {
-  if (watchedState.status !== 'success') {
-    return;
-  }
-
-  setTimeout(updatePosts, 5000);
-  watchedState.status = 'updating';
-
-  const handleFeed = (feed) => parseRSS(feed).then((xmlDocument) => {
-    const items = xmlDocument.querySelectorAll('item');
-
+const addNewPosts = () => {
+  const handleFeed = (feed, url) => {
     const newPosts = [];
 
-    const itemsArray = Array.from(items);
-    const lastPost = watchedState.data.content[feed].posts[0];
+    const lastPost = watchedState.data.content[url].posts[0];
     const lastPostDate = new Date(lastPost.publicationDate);
+    const feedPosts = feed.posts;
 
-    for (const item of itemsArray) {
-      const pubDate = new Date(item.querySelector('pubDate').textContent);
+    for (const item of feedPosts) {
+      const pubDate = new Date(item.publicationDate);
       if (lastPostDate.getTime() >= pubDate.getTime()) {
         break;
       }
 
-      const post = transformXmlItem(feed, item);
-      newPosts.push(post);
+      newPosts.push(item);
 
       const containerPost = document.getElementById('posts');
-      containerPost.prepend(generatePost(post));
+      containerPost.prepend(generatePost(item));
     }
 
-    watchedState.data.content[feed].posts = [
+    watchedState.data.content[url].posts = [
       ...newPosts.reverse(),
-      ...watchedState.data.content[feed].posts,
+      ...watchedState.data.content[url].posts,
     ];
-  });
+  };
 
-  const feedsPromises = watchedState.data.feeds.map((feed) => handleFeed(feed));
+  const feedsPromises = watchedState.data.feeds.map((url) => getRSS(url)
+    .then((data) => parseRSS(data, url))
+    .then((feed) => { handleFeed(feed, url); }));
 
-  Promise.all(feedsPromises).finally(() => {
-    watchedState.status = 'success';
+  return Promise.all(feedsPromises).finally(() => {
+    watchedState.updatingStatus = 'waiting';
   });
 };
 
@@ -107,26 +104,20 @@ form.addEventListener('submit', (e) => {
   shemaUrl.validate({ url: inputUrl })
     .then(() => {
       watchedState.status = 'loading';
-      parseRSS(inputUrl).then((xmlDocument) => {
-        const items = xmlDocument.querySelectorAll('item');
 
-        const feed = {
-          title: xmlDocument.querySelector('title').textContent,
-          description: xmlDocument.querySelector('description').textContent,
-          posts: Array.from(items).map((item) => transformXmlItem(inputUrl, item)),
-        };
+      getRSS(inputUrl)
+        .then((data) => parseRSS(data, inputUrl))
+        .then((feed) => {
+          watchedState.data.content[inputUrl] = feed;
 
-        watchedState.data.content[inputUrl] = feed;
+          generatePosts(feed);
+          generateFeeds(feed);
 
-        generatePosts(feed);
-        generateFeeds(feed);
-
-        input.focus();
-        form.reset();
-        watchedState.data.feeds.push(inputUrl);
-        watchedState.error = '';
-        watchedState.status = 'success';
-      })
+          watchedState.data.feeds.push(inputUrl);
+          watchedState.error = '';
+          watchedState.status = 'success';
+          form.reset();
+        })
         .catch((error) => {
           if (error.name === 'incorrectRSS') {
             watchedState.status = 'error';
@@ -141,3 +132,13 @@ form.addEventListener('submit', (e) => {
       watchedState.error = err.message;
     });
 });
+
+const updatePosts = () => {
+  addNewPosts().then(() => {
+    setTimeout(updatePosts, 5000);
+  });
+  // const funk = addNewPosts();
+  // console.log('addNewPosts', funk);
+};
+
+updatePosts();

@@ -9,6 +9,8 @@ const submit = document.querySelector('button[type="submit"]');
 const state = {
   // error loading success waiting
   status: 'waiting',
+  // waiting, loading
+  updatingStatus: 'waiting',
   data: {
     feeds: [],
     content: {},
@@ -38,21 +40,35 @@ const handleSuccess = (status) => {
   }
 };
 
-const watchedState = onChange(state, (path, value) => {
+const watchedState = onChange(state, () => {
   handleErrors(state.error);
   handleSuccess(state.status);
   const buttonSent = document.querySelector('span[role="status"]');
   submit.disabled = false;
 
-  if (state.status === 'loading') {
-    submit.disabled = true;
-    document.getElementById('spiner').classList.remove('d-none');
-    buttonSent.textContent = i18next.t('submitSpiner');
-  }
+  switch (state.status) {
+    case 'waiting':
+      input.focus();
+      break;
 
-  if (state.status === 'success') {
-    document.getElementById('spiner').classList.add('d-none');
-    buttonSent.textContent = i18next.t('submitButton');
+    case 'loading':
+      submit.disabled = true;
+      document.getElementById('spiner').classList.remove('d-none');
+      buttonSent.textContent = i18next.t('submitSpiner');
+      break;
+
+    case 'success':
+      input.focus();
+      document.getElementById('spiner').classList.add('d-none');
+      buttonSent.textContent = i18next.t('submitButton');
+      break;
+
+    case 'updating':
+
+      break;
+
+    default:
+      break;
   }
 
   if (state.data.feeds.length !== 0) {
