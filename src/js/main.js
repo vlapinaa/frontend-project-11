@@ -137,8 +137,6 @@ const updatePosts = () => {
   addNewPosts().then(() => {
     setTimeout(updatePosts, 5000);
   });
-  // const funk = addNewPosts();
-  // console.log('addNewPosts', funk);
 };
 
 updatePosts();

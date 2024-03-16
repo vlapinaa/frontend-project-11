@@ -20,23 +20,19 @@ const state = {
 
 const handleErrors = (error) => {
   input.classList.remove('is-invalid');
-  errorMessage.classList.remove('d-block');
-  errorMessage.classList.add('d-none');
+  errorMessage.classList.add('invisible');
 
   if (error) {
-    errorMessage.classList.remove('d-none');
-    errorMessage.classList.add('d-block');
+    errorMessage.classList.remove('invisible');
     errorMessage.textContent = error;
   }
 };
 
 const handleSuccess = (status) => {
-  successMessage.classList.remove('d-block');
-  successMessage.classList.add('d-none');
+  successMessage.classList.add('invisible');
 
   if (status === 'success') {
-    successMessage.classList.remove('d-none');
-    successMessage.classList.add('d-block');
+    successMessage.classList.remove('invisible');
   }
 };
 
@@ -63,8 +59,9 @@ const watchedState = onChange(state, () => {
       buttonSent.textContent = i18next.t('submitButton');
       break;
 
-    case 'updating':
-
+    case 'error':
+      document.getElementById('spiner').classList.add('d-none');
+      buttonSent.textContent = i18next.t('submitButton');
       break;
 
     default:
