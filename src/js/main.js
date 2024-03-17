@@ -55,6 +55,7 @@ const shemaUrl = yup.object({
 const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
   params: {
     url,
+    disableCache: true,
   },
 })
   .then((response) => response.data);
