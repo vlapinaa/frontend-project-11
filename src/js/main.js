@@ -58,7 +58,11 @@ const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
     disableCache: true,
   },
 })
-  .then((response) => response.data);
+  .then((response) => response.data)
+  .catch(() => {
+    watchedState.status = 'error';
+    watchedState.error = 'Ошибка сети';
+  });
 
 const form = document.querySelector('form');
 
