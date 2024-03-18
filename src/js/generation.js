@@ -3,12 +3,12 @@ export const generatePost = (post) => {
   postCard.classList.add('list-group-item');
   const date = new Date(post.publicationDate);
   const postHTML = `
-      <p class="text-body-secondary"><small>${date.toDateString()}</small></p>
-      <div>
-          <a href="${post.link}" target="_blank" class="fw-bold">
-            ${post.title}
-          </a>
-      </div>
+      <p class="text-body-secondary small">
+        ${date.toDateString()}
+      </p>
+      <a href="${post.link}" target="_blank" class="fw-bold" style="display: block">
+        ${post.title}
+      </a>
       <button 
         class="btn btn-outline-secondary view btn-sm my-3" 
         style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .50rem; --bs-btn-font-size: .75rem;"
@@ -17,7 +17,7 @@ export const generatePost = (post) => {
         data-bs-toggle="modal" 
         data-bs-target="#exampleModal"
       >
-      Просмотр
+        Просмотр
       </button>
     `;
   postCard.innerHTML = postHTML;
