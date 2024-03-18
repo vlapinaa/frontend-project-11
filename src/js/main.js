@@ -5,7 +5,7 @@ import axios from 'axios';
 
 import '../scss/styles.scss';
 import { generatePosts, generateFeeds, generatePost } from './generation';
-import { parseRSS } from './parsing';
+import parseRSS from './parsing';
 import watchedState from './view';
 
 i18next.init({
@@ -74,17 +74,17 @@ const addNewPosts = () => {
     const lastPostDate = new Date(lastPost.publicationDate);
     const feedPosts = feed.posts;
 
-    for (const item of feedPosts) {
+    feedPosts.forEach((item) => {
       const pubDate = new Date(item.publicationDate);
       if (lastPostDate.getTime() >= pubDate.getTime()) {
-        break;
+        return;
       }
 
       newPosts.push(item);
 
       const containerPost = document.getElementById('posts');
       containerPost.prepend(generatePost(item));
-    }
+    });
 
     watchedState.data.content[url].posts = [
       ...newPosts.reverse(),

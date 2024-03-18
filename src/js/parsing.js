@@ -1,6 +1,6 @@
-import { transformXmlItem } from './helpers';
+import transformXmlItem from './helpers';
 
-export const parseRSS = (data, url) => {
+const parseRSS = (data, url) => {
   const parser = new DOMParser();
   const xml = parser.parseFromString(data.contents, 'text/xml');
   if (xml.documentElement.nodeName !== 'rss') {
@@ -16,3 +16,5 @@ export const parseRSS = (data, url) => {
     posts: Array.from(items).map((item) => transformXmlItem(url, item)),
   };
 };
+
+export default parseRSS;

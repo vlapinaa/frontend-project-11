@@ -1,4 +1,4 @@
-export const transformXmlItem = (feed, item) => ({
+export default (feed, item) => ({
   feed,
   title: item.querySelector('title')?.textContent || 'Title',
   description: item.querySelector('description')?.textContent ?? 'Description',

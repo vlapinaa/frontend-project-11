@@ -23,7 +23,7 @@ export const generatePost = (post) => {
   postCard.innerHTML = postHTML;
 
   postCard.querySelector('button[data-bs-toggle="modal"]')
-    .addEventListener('click', (event) => {
+    .addEventListener('click', () => {
       const modalContent = document.querySelector('.modal-body');
       const modalLink = document.querySelector('.modal-link');
       const modalTitle = document.querySelector('.modal-title');
