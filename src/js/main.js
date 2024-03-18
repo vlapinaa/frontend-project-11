@@ -22,7 +22,7 @@ i18next.init({
         errors: {
           incorrectUrl: 'Ссылка должна быть валидным URL',
           requiredUrl: 'Не должно быть пусты',
-          duplicatedUrl: 'RSS уже добавлен',
+          duplicatedUrl: 'RSS уже существует',
           incorrectRSS: 'Ресурс не содержит валидный RSS',
         },
       },
