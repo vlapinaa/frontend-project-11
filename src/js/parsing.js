@@ -3,7 +3,7 @@ import { transformXmlItem } from './helpers';
 export const parseRSS = (data, url) => {
   const parser = new DOMParser();
   const xml = parser.parseFromString(data.contents, 'text/xml');
-  if (xml.activeElement.nodeName !== 'rss') {
+  if (xml.documentElement.nodeName !== 'rss') {
     const parsingError = new Error('incorrect RSS');
     parsingError.name = 'incorrectRSS';
     throw parsingError;
