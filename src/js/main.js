@@ -8,22 +8,6 @@ import parseRSS from './parsing';
 import watchedState from './view';
 import transformXmlItem from './helpers';
 
-const shemaUrl = yup.object({
-  url: yup.string()
-    .required(i18next.t('errors.requiredUrl'))
-    .url(i18next.t('errors.incorrectUrl'))
-    .test({
-      name: 'is-url-added',
-      skipAbsent: false,
-      test(value, context) {
-        if (watchedState.data.feeds.includes(value)) {
-          return context.createError({ message: i18next.t('errors.duplicatedUrl') });
-        }
-        return true;
-      },
-    }),
-});
-
 const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
   params: {
     url,
@@ -101,6 +85,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rssSuccess').textContent = t('successMessage');
   });
 
+  const shemaUrl = yup.object({
+    url: yup.string()
+      .required(i18next.t('errors.requiredUrl'))
+      .url(i18next.t('errors.incorrectUrl'))
+      .test({
+        name: 'is-url-added',
+        skipAbsent: false,
+        test(value, context) {
+          if (watchedState.data.feeds.includes(value)) {
+            return context.createError({ message: i18next.t('errors.duplicatedUrl') });
+          }
+          return true;
+        },
+      }),
+  });
+
   document.querySelector('form').addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
       })
       .catch((err) => {
+        console.log('err', err, err.message);
         watchedState.status = 'error';
         watchedState.error = err.message;
       });

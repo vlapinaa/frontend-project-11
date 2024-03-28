@@ -98,6 +98,7 @@ const watchedState = onChange(state, () => {
     case 'error':
       document.getElementById('spiner').classList.add('d-none');
       buttonSent.textContent = i18next.t('submitButton');
+
       break;
 
     default:
