@@ -4,37 +4,9 @@ import i18next from 'i18next';
 import axios from 'axios';
 
 import '../scss/styles.scss';
-import { generatePosts, generateFeeds, generatePost } from './generation';
 import parseRSS from './parsing';
 import watchedState from './view';
-
-i18next.init({
-  lng: 'ru',
-  resources: {
-    ru: {
-      translation: {
-        title: 'RSS агрегатор',
-        subTitle: 'Начните читать RSS сегодня! Это легко, это красиво.',
-        label: 'Ссылка RSS',
-        submitButton: 'Добавить',
-        submitSpiner: 'Loading...',
-        successMessage: 'RSS успешно загружен',
-        errors: {
-          incorrectUrl: 'Ссылка должна быть валидным URL',
-          requiredUrl: 'Не должно быть пусты',
-          duplicatedUrl: 'RSS уже существует',
-          incorrectRSS: 'Ресурс не содержит валидный RSS',
-        },
-      },
-    },
-  },
-}).then((t) => {
-  document.getElementById('title').textContent = t('title');
-  document.getElementById('subTitle').textContent = t('subTitle');
-  document.getElementById('labelForInput').textContent = t('label');
-  document.querySelector('span[role="status"]').textContent = t('submitButton');
-  document.getElementById('rssSuccess').textContent = t('successMessage');
-});
+import transformXmlItem from './helpers';
 
 const shemaUrl = yup.object({
   url: yup.string()
@@ -64,12 +36,9 @@ const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
     watchedState.error = 'Ошибка сети';
   });
 
-const form = document.querySelector('form');
-
 const addNewPosts = () => {
   const handleFeed = (feed, url) => {
-    const newPosts = [];
-
+    const { newPosts } = watchedState.data.content[url];
     const lastPost = watchedState.data.content[url].posts[0];
     const lastPostDate = new Date(lastPost.publicationDate);
     const feedPosts = feed.posts;
@@ -81,9 +50,6 @@ const addNewPosts = () => {
       }
 
       newPosts.push(item);
-
-      const containerPost = document.getElementById('posts');
-      containerPost.prepend(generatePost(item));
     });
 
     watchedState.data.content[url].posts = [
@@ -93,55 +59,85 @@ const addNewPosts = () => {
   };
 
   const feedsPromises = watchedState.data.feeds.map((url) => getRSS(url)
-    .then((data) => parseRSS(data, url))
-    .then((feed) => { handleFeed(feed, url); }));
+    .then((data) => {
+      const feed = parseRSS(data);
+      feed.posts = feed.posts.map((item) => transformXmlItem(url, item));
+      handleFeed(feed, url);
+    }));
 
-  return Promise.all(feedsPromises).finally(() => {
-    watchedState.updatingStatus = 'waiting';
+  Promise.all(feedsPromises).finally(() => {
+    watchedState.updatingStatus = 'loading';
+  }).then(() => {
+    setTimeout(addNewPosts, 5000);
   });
 };
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const inputUrl = formData.get('url');
+document.addEventListener('DOMContentLoaded', () => {
+  i18next.init({
+    lng: 'ru',
+    resources: {
+      ru: {
+        translation: {
+          title: 'RSS агрегатор',
+          subTitle: 'Начните читать RSS сегодня! Это легко, это красиво.',
+          label: 'Ссылка RSS',
+          submitButton: 'Добавить',
+          submitSpiner: 'Loading...',
+          successMessage: 'RSS успешно загружен',
+          errors: {
+            incorrectUrl: 'Ссылка должна быть валидным URL',
+            requiredUrl: 'Не должно быть пусты',
+            duplicatedUrl: 'RSS уже существует',
+            incorrectRSS: 'Ресурс не содержит валидный RSS',
+          },
+        },
+      },
+    },
+  }).then((t) => {
+    document.getElementById('title').textContent = t('title');
+    document.getElementById('subTitle').textContent = t('subTitle');
+    document.getElementById('labelForInput').textContent = t('label');
+    document.querySelector('span[role="status"]').textContent = t('submitButton');
+    document.getElementById('rssSuccess').textContent = t('successMessage');
+  });
 
-  shemaUrl.validate({ url: inputUrl })
-    .then(() => {
-      watchedState.status = 'loading';
+  document.querySelector('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const inputUrl = formData.get('url');
 
-      getRSS(inputUrl)
-        .then((data) => parseRSS(data, inputUrl))
-        .then((feed) => {
-          watchedState.data.content[inputUrl] = feed;
+    watchedState.status = 'loading';
 
-          generatePosts(feed);
-          generateFeeds(feed);
+    shemaUrl.validate({ url: inputUrl })
+      .then(() => {
+        getRSS(inputUrl)
+          .then((data) => {
+            const feed = parseRSS(data);
+            feed.posts = feed.posts.map((item) => transformXmlItem(inputUrl, item));
 
-          watchedState.data.feeds.push(inputUrl);
-          watchedState.error = '';
-          watchedState.status = 'success';
-          form.reset();
-        })
-        .catch((error) => {
-          if (error.name === 'incorrectRSS') {
-            watchedState.status = 'error';
-            watchedState.error = i18next.t('errors.incorrectRSS');
-            return;
-          }
-          throw new Error(`Error: ${error}`);
-        });
-    })
-    .catch((err) => {
-      watchedState.status = 'error';
-      watchedState.error = err.message;
-    });
+            watchedState.data.content[inputUrl] = feed;
+            watchedState.data.activeFeed = feed;
+
+            watchedState.status = 'success';
+
+            watchedState.data.feeds.push(inputUrl);
+            watchedState.error = null;
+          })
+          .catch((error) => {
+            if (error.name === 'incorrectRSS') {
+              watchedState.status = 'error';
+              watchedState.error = i18next.t('errors.incorrectRSS');
+              return;
+            }
+
+            throw new Error(`Error: ${error}`);
+          });
+      })
+      .catch((err) => {
+        watchedState.status = 'error';
+        watchedState.error = err.message;
+      });
+  });
+
+  addNewPosts();
 });
-
-const updatePosts = () => {
-  addNewPosts().then(() => {
-    setTimeout(updatePosts, 5000);
-  });
-};
-
-updatePosts();

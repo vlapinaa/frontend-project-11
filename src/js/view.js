@@ -1,10 +1,9 @@
 import onChange from 'on-change';
 import i18next from 'i18next';
 
-const input = document.querySelector('input[name="url"]');
-const errorMessage = document.getElementById('rssError');
-const successMessage = document.getElementById('rssSuccess');
-const submit = document.querySelector('button[type="submit"]');
+import { generatePosts, generateFeeds, generatePost } from './generation';
+
+const INPUT_SELECTOR = 'input[name="url"]';
 
 const state = {
   // error loading success waiting
@@ -13,12 +12,16 @@ const state = {
   updatingStatus: 'waiting',
   data: {
     feeds: [],
+    activeFeed: '',
     content: {},
   },
-  error: '',
+  error: null,
 };
 
 const handleErrors = (error) => {
+  const errorMessage = document.getElementById('rssError');
+  const input = document.querySelector(INPUT_SELECTOR);
+
   input.classList.remove('is-invalid');
   errorMessage.classList.add('invisible');
 
@@ -29,6 +32,8 @@ const handleErrors = (error) => {
 };
 
 const handleSuccess = (status) => {
+  const successMessage = document.getElementById('rssSuccess');
+
   successMessage.classList.add('invisible');
 
   if (status === 'success') {
@@ -36,11 +41,35 @@ const handleSuccess = (status) => {
   }
 };
 
+const form = document.querySelector('form');
+
 const watchedState = onChange(state, () => {
+  const input = document.querySelector(INPUT_SELECTOR);
+  const submit = document.querySelector('button[type="submit"]');
+
   handleErrors(state.error);
   handleSuccess(state.status);
+
   const buttonSent = document.querySelector('span[role="status"]');
   submit.disabled = false;
+
+  if (state.updatingStatus === 'loading') {
+    state.data.feeds.forEach((feed) => {
+      const posts = state.data.content[feed].newPosts;
+      state.data.content[feed].newPosts = [];
+
+      if (posts.length === 0) {
+        return;
+      }
+
+      posts.reverse().forEach((item) => {
+        const containerPost = document.getElementById('posts');
+        containerPost.prepend(generatePost(item));
+      });
+    });
+
+    state.updatingStatus = 'waiting';
+  }
 
   switch (state.status) {
     case 'waiting':
@@ -54,9 +83,16 @@ const watchedState = onChange(state, () => {
       break;
 
     case 'success':
+      if (state.data.activeFeed.length !== 0) {
+        generatePosts(state.data.activeFeed);
+        generateFeeds(state.data.activeFeed);
+        state.data.activeFeed = '';
+      }
+
       input.focus();
       document.getElementById('spiner').classList.add('d-none');
       buttonSent.textContent = i18next.t('submitButton');
+      form.reset();
       break;
 
     case 'error':

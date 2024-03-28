@@ -9,4 +9,4 @@
 
 Это сервис для агрегации RSS-потоков, с помощью которых удобно читать разнообразные источники, например, блоги. Он позволяет добавлять неограниченное количество RSS-лент, сам их обновляет и добавляет новые записи в общий поток.
 
-Link: https://frontend-project-11-q9plso4i2-vlapinaas-projects.vercel.app/
+Link: https://frontend-project-11-9zn9qllx0-vlapinaas-projects.vercel.app/
