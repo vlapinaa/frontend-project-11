@@ -13,7 +13,7 @@ export const generatePost = (post) => {
         class="btn btn-outline-secondary view btn-sm my-3" 
         style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .50rem; --bs-btn-font-size: .75rem;"
         type="button" 
-        data-feed="${post.feed}" 
+        data-feed="${post.idFeed}" 
         data-bs-toggle="modal" 
         data-bs-target="#exampleModal"
       >
@@ -29,7 +29,7 @@ export const generatePost = (post) => {
       const modalTitle = document.querySelector('.modal-title');
       const link = document.querySelector(`[href = '${post.link}']`);
       link.classList.add('fw-normal');
-      modalContent.textContent = post.description;
+      modalContent.innerHTML = post.description;
       modalLink.setAttribute('href', post.link);
       modalTitle.textContent = post.title;
     });
@@ -53,14 +53,15 @@ const generateFeed = (title, description) => {
 
 export const generateFeeds = (feed) => {
   const containerFeed = document.getElementById('feeds');
+  console.log('feed', feed, 'title', feed.title);
   const cardBodyFeed = generateFeed(feed.title, feed.description);
   containerFeed.prepend(cardBodyFeed);
 };
 
-export const generatePosts = (feed) => {
+export const generatePosts = (posts) => {
   const containerPost = document.getElementById('posts');
 
-  [...feed.posts].reverse().forEach((post) => {
+  [...posts].reverse().forEach((post) => {
     containerPost.prepend(generatePost(post));
   });
 };

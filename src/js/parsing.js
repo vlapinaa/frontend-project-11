@@ -8,13 +8,19 @@ const parseRSS = (data) => {
     throw parsingError;
   }
   const items = xml.querySelectorAll('item');
+  const transformXmlItem = Array.from(items).map((item) => ({
+    title: item.querySelector('title')?.textContent || 'Title',
+    description: item.querySelector('description')?.textContent ?? 'Description',
+    link: item.querySelector('link')?.textContent || 'Link',
+    publicationDate: item.querySelector('pubDate')?.textContent || 'Publication date',
+  }));
 
-  return {
+  const feed = {
     title: xml.querySelector('title').textContent,
     description: xml.querySelector('description').textContent,
-    posts: Array.from(items),
-    newPosts: [],
   };
+
+  return { transformXmlItem, feed };
 };
 
 export default parseRSS;

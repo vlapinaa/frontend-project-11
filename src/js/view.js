@@ -7,28 +7,32 @@ const INPUT_SELECTOR = 'input[name="url"]';
 
 const state = {
   // error loading success waiting
-  status: 'waiting',
+  statusPage: 'waiting',
   // waiting, loading
   updatingStatus: 'waiting',
   data: {
+    activeFeed: null,
     feeds: [],
-    activeFeed: '',
-    content: {},
+    posts: [],
+    newPosts: [],
   },
-  error: null,
+  errorRSS: null,
+  errorNetwork: null,
+  errorUrl: null,
 };
 
-const handleErrors = (error) => {
+const handleErrors = (errors) => {
   const errorMessage = document.getElementById('rssError');
   const input = document.querySelector(INPUT_SELECTOR);
 
   input.classList.remove('is-invalid');
   errorMessage.classList.add('invisible');
-
-  if (error) {
-    errorMessage.classList.remove('invisible');
-    errorMessage.textContent = error;
-  }
+  errors.forEach((error) => {
+    if (error) {
+      errorMessage.classList.remove('invisible');
+      errorMessage.textContent = error;
+    }
+  });
 };
 
 const handleSuccess = (status) => {
@@ -43,35 +47,38 @@ const handleSuccess = (status) => {
 
 const form = document.querySelector('form');
 
-const watchedState = onChange(state, () => {
+const watchedState = onChange(state, (path, value) => {
   const input = document.querySelector(INPUT_SELECTOR);
   const submit = document.querySelector('button[type="submit"]');
-
-  handleErrors(state.error);
-  handleSuccess(state.status);
+  handleErrors([state.errorUrl, state.errorRSS, state.errorNetwork]);
+  handleSuccess(state.statusPage);
 
   const buttonSent = document.querySelector('span[role="status"]');
   submit.disabled = false;
+  if (path === 'data.newPosts') {
+    generatePosts(value);
+    console.log('value', value);
+  }
 
   if (state.updatingStatus === 'loading') {
-    state.data.feeds.forEach((feed) => {
-      const posts = state.data.content[feed].newPosts;
-      state.data.content[feed].newPosts = [];
+    // state.data.feeds.forEach(({ nameFeed }) => {
+    //   const posts = state.data.feeds[nameFeed];
+    //   // state.data.content[nameFeed].newPosts = [];
 
-      if (posts.length === 0) {
-        return;
-      }
+    //   if (posts.length === 0) {
+    //     return;
+    //   }
 
-      posts.reverse().forEach((item) => {
-        const containerPost = document.getElementById('posts');
-        containerPost.prepend(generatePost(item));
-      });
-    });
+    //   posts.reverse().forEach((item) => {
+    //     const containerPost = document.getElementById('posts');
+    //     containerPost.prepend(generatePost(item));
+    //   });
+    // });
 
     state.updatingStatus = 'waiting';
   }
 
-  switch (state.status) {
+  switch (state.statusPage) {
     case 'waiting':
       input.focus();
       break;
@@ -83,10 +90,12 @@ const watchedState = onChange(state, () => {
       break;
 
     case 'success':
-      if (state.data.activeFeed.length !== 0) {
-        generatePosts(state.data.activeFeed);
+      if (state.data.activeFeed !== null) {
+        const posts = state.data.posts
+          .filter((post) => post.idFeed === state.data.activeFeed.idFeed);
+        generatePosts(posts);
         generateFeeds(state.data.activeFeed);
-        state.data.activeFeed = '';
+        state.data.activeFeed = null;
       }
 
       input.focus();
@@ -95,7 +104,19 @@ const watchedState = onChange(state, () => {
       form.reset();
       break;
 
-    case 'error':
+    case 'errorRSS':
+      document.getElementById('spiner').classList.add('d-none');
+      buttonSent.textContent = i18next.t('submitButton');
+
+      break;
+
+    case 'errorUrl':
+      document.getElementById('spiner').classList.add('d-none');
+      buttonSent.textContent = i18next.t('submitButton');
+
+      break;
+
+    case 'errorNetwork':
       document.getElementById('spiner').classList.add('d-none');
       buttonSent.textContent = i18next.t('submitButton');
 
