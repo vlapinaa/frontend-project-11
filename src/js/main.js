@@ -79,7 +79,7 @@ export default () => {
           name: 'is-url-added',
           skipAbsent: false,
           test(value, context) {
-            if (watchedState.data.feeds.includes(value)) {
+            if (watchedState.data.feeds.nameFeed.includes(value)) {
               return context.createError({ message: i18next.t('errors.duplicatedUrl') });
             }
             return true;
