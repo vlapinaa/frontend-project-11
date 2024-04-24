@@ -3,17 +3,18 @@ export const generatePost = (post) => {
   postCard.classList.add('list-group-item');
   const date = new Date(post.publicationDate);
   const postHTML = `
-      <p class="text-body-secondary small">
+      <p class="text-body-secondary small font-monospace">
         ${date.toDateString()}
       </p>
-      <a href="${post.link}" target="_blank" class="fw-bold" style="display: block">
+      <a href="${post.link}" target="_blank" class="fw-bold font-monospace" style="display: block">
         ${post.title}
       </a>
       <button 
-        class="btn btn-outline-secondary view btn-sm my-3" 
+        class="btn btn-outline-secondary view btn-sm my-3 font-monospace" 
         style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .50rem; --bs-btn-font-size: .75rem;"
         type="button" 
-        data-feed="${post.idFeed}" 
+        data-feed="${post.idFeed}"
+        data-title="${post.title}"
         data-bs-toggle="modal" 
         data-bs-target="#exampleModal"
       >
@@ -22,27 +23,15 @@ export const generatePost = (post) => {
     `;
   postCard.innerHTML = postHTML;
 
-  postCard.querySelector('button[data-bs-toggle="modal"]')
-    .addEventListener('click', () => {
-      const modalContent = document.querySelector('.modal-body');
-      const modalLink = document.querySelector('.modal-link');
-      const modalTitle = document.querySelector('.modal-title');
-      const link = document.querySelector(`[href = '${post.link}']`);
-      link.classList.add('fw-normal');
-      modalContent.innerHTML = post.description;
-      modalLink.setAttribute('href', post.link);
-      modalTitle.textContent = post.title;
-    });
-
   return postCard;
 };
 
 const generateFeed = (title, description) => {
   const cardBodyFeed = document.createElement('div');
-  cardBodyFeed.classList.add('card-body');
+  cardBodyFeed.classList.add('card-body', 'font-monospace');
   const titleFeed = document.createElement('h4');
   titleFeed.textContent = title;
-  titleFeed.classList.add('h5', 'pt-3', 'pb-2');
+  titleFeed.classList.add('h5', 'pt-3', 'pb-2', 'font-monospace');
   const descriptionFeed = document.createElement('p');
   descriptionFeed.textContent = description;
   cardBodyFeed.appendChild(titleFeed);
@@ -53,15 +42,14 @@ const generateFeed = (title, description) => {
 
 export const generateFeeds = (feed) => {
   const containerFeed = document.getElementById('feeds');
-  console.log('feed', feed, 'title', feed.title);
   const cardBodyFeed = generateFeed(feed.title, feed.description);
   containerFeed.prepend(cardBodyFeed);
 };
 
-export const generatePosts = (posts) => {
+export const generatePosts = (posts, watchedState) => {
   const containerPost = document.getElementById('posts');
 
   [...posts].reverse().forEach((post) => {
-    containerPost.prepend(generatePost(post));
+    containerPost.prepend(generatePost(post, watchedState));
   });
 };

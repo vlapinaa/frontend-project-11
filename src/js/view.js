@@ -1,25 +1,8 @@
-import onChange from 'on-change';
 import i18next from 'i18next';
 
-import { generatePosts, generateFeeds, generatePost } from './generation';
+import { generatePosts, generateFeeds } from './generation';
 
 const INPUT_SELECTOR = 'input[name="url"]';
-
-const state = {
-  // error loading success waiting
-  statusPage: 'waiting',
-  // waiting, loading
-  updatingStatus: 'waiting',
-  data: {
-    activeFeed: null,
-    feeds: [],
-    posts: [],
-    newPosts: [],
-  },
-  errorRSS: null,
-  errorNetwork: null,
-  errorUrl: null,
-};
 
 const handleErrors = (errors) => {
   const errorMessage = document.getElementById('rssError');
@@ -42,40 +25,35 @@ const handleSuccess = (status) => {
 
   if (status === 'success') {
     successMessage.classList.remove('invisible');
+    successMessage.classList.add('visible');
   }
 };
 
 const form = document.querySelector('form');
 
-const watchedState = onChange(state, (path, value) => {
+const someImportWatchFn = (state, path, value) => {
   const input = document.querySelector(INPUT_SELECTOR);
   const submit = document.querySelector('button[type="submit"]');
-  handleErrors([state.errorUrl, state.errorRSS, state.errorNetwork]);
-  handleSuccess(state.statusPage);
-
   const buttonSent = document.querySelector('span[role="status"]');
+
   submit.disabled = false;
+
   if (path === 'data.newPosts') {
-    generatePosts(value);
-    console.log('value', value);
+    generatePosts(value, state.data.modalData);
   }
 
-  if (state.updatingStatus === 'loading') {
-    // state.data.feeds.forEach(({ nameFeed }) => {
-    //   const posts = state.data.feeds[nameFeed];
-    //   // state.data.content[nameFeed].newPosts = [];
+  if (path === 'data.modalData') {
+    const post = state.data.posts.find(({ title }) => title === value);
 
-    //   if (posts.length === 0) {
-    //     return;
-    //   }
+    const modalContent = document.querySelector('.modal-body');
+    const modalLink = document.querySelector('.modal-link');
+    const modalTitle = document.querySelector('.modal-title');
+    const link = document.querySelector(`[href = '${post.link}']`);
 
-    //   posts.reverse().forEach((item) => {
-    //     const containerPost = document.getElementById('posts');
-    //     containerPost.prepend(generatePost(item));
-    //   });
-    // });
-
-    state.updatingStatus = 'waiting';
+    link.classList.add('fw-normal');
+    modalContent.innerHTML = post.description;
+    modalLink.setAttribute('href', post.link);
+    modalTitle.textContent = post.title;
   }
 
   switch (state.statusPage) {
@@ -93,8 +71,9 @@ const watchedState = onChange(state, (path, value) => {
       if (state.data.activeFeed !== null) {
         const posts = state.data.posts
           .filter((post) => post.idFeed === state.data.activeFeed.idFeed);
-        generatePosts(posts);
+        generatePosts(posts, state.data.modalData);
         generateFeeds(state.data.activeFeed);
+        // eslint-disable-next-line no-param-reassign
         state.data.activeFeed = null;
       }
 
@@ -104,32 +83,55 @@ const watchedState = onChange(state, (path, value) => {
       form.reset();
       break;
 
-    case 'errorRSS':
+    case 'errors.url':
       document.getElementById('spiner').classList.add('d-none');
       buttonSent.textContent = i18next.t('submitButton');
+      switch (value) {
+        case 'required':
+          // eslint-disable-next-line no-param-reassign
+          state.errors.url = i18next.t('errors.requiredUrl');
+          break;
 
+        case 'url':
+          // eslint-disable-next-line no-param-reassign
+          state.errors.url = i18next.t('errors.incorrectUrl');
+          break;
+
+        case 'duplicate':
+          // eslint-disable-next-line no-param-reassign
+          state.errors.url = i18next.t('errors.duplicatedUrl');
+          break;
+
+        default:
+          break;
+      }
       break;
 
-    case 'errorUrl':
-      document.getElementById('spiner').classList.add('d-none');
-      buttonSent.textContent = i18next.t('submitButton');
-
+    case 'errors.network':
+      // eslint-disable-next-line no-param-reassign
+      state.errors.network = i18next.t('errors.network');
       break;
 
-    case 'errorNetwork':
-      document.getElementById('spiner').classList.add('d-none');
-      buttonSent.textContent = i18next.t('submitButton');
-
+    case 'errors.rss':
+      // eslint-disable-next-line no-param-reassign
+      state.errors.rss = i18next.t('errors.incorrectRSS');
       break;
 
     default:
       break;
   }
 
+  handleErrors([
+    state.errors.rss,
+    state.errors.network,
+    state.errors.url,
+  ]);
+  handleSuccess(state.statusPage);
+
   if (state.data.feeds.length !== 0) {
     document.getElementById('postH2').classList.remove('d-none');
     document.getElementById('feedH2').classList.remove('d-none');
   }
-});
+};
 
-export default watchedState;
+export default someImportWatchFn;

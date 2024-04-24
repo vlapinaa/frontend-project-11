@@ -3,64 +3,83 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
 import { uniqueId } from 'lodash';
+import onChange from 'on-change';
 
 import '../scss/styles.scss';
 import parseRSS from './parsing';
-import watchedState from './view';
-// import transformXmlItem from './helpers';
+import someImportWatchFn from './view';
 import resources from '../locales/ru';
 
-const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
-  params: {
-    url,
-    disableCache: true,
-  },
-})
-  .then((response) => response.data)
-  .catch(() => {
-    watchedState.statusPage = 'errorNetwork';
-    watchedState.errorNetwork = 'Ошибка сети';
+export default () => {
+  const state = {
+    // error loading success waiting
+    statusPage: 'waiting',
+    // waiting, loading
+    updatingStatus: 'waiting',
+    data: {
+      activeFeed: null,
+      feeds: [],
+      posts: [],
+      newPosts: [],
+      modalData: null,
+    },
+    errors: {
+      rss: null,
+      network: null,
+      url: null,
+    },
+  };
+  const watchedState = onChange(state, (path, value) => {
+    someImportWatchFn(state, path, value);
   });
 
-const addNewPosts = () => {
-  const handleFeed = (posts, idFeedNow) => {
-    const oldPosts = watchedState.data.posts.filter((post) => post.idFeed === idFeedNow);
-    const lastPost = oldPosts[0];
-    const lastPostDate = new Date(lastPost.publicationDate);
-    const feedPosts = posts;
-
-    const newPosts = feedPosts.filter((item) => {
-      const pubDate = new Date(item.publicationDate);
-      return lastPostDate.getTime() < pubDate.getTime();
+  const getRSS = (url) => axios.get('https://allorigins.hexlet.app/get', {
+    params: {
+      url,
+      disableCache: true,
+    },
+  })
+    .then((response) => response.data)
+    .catch(() => {
+      watchedState.statusPage = 'errors.network';
     });
-    console.log('newPosts', newPosts);
-    if (newPosts.length !== 0) {
-      watchedState.data.newPosts = newPosts;
-      watchedState.data.posts = [
-        ...newPosts,
-        ...watchedState.data.posts,
-      ];
-    }
+
+  const addNewPosts = () => {
+    const handleFeed = (posts, idFeedNow) => {
+      const oldPosts = watchedState.data.posts.filter((post) => post.idFeed === idFeedNow);
+      const lastPost = oldPosts[0];
+      const lastPostDate = new Date(lastPost.publicationDate);
+      const feedPosts = posts;
+
+      const newPosts = feedPosts.filter((item) => {
+        const pubDate = new Date(item.publicationDate);
+        return lastPostDate.getTime() < pubDate.getTime();
+      });
+      if (newPosts.length !== 0) {
+        watchedState.data.newPosts = newPosts;
+        watchedState.data.posts = [
+          ...newPosts,
+          ...watchedState.data.posts,
+        ];
+      }
+    };
+
+    const feedsPromises = watchedState.data.feeds.map(({ nameFeed, idFeed }) => getRSS(nameFeed)
+      .then((data) => {
+        const { transformXmlItem } = parseRSS(data);
+        const posts = transformXmlItem.map((item) => ({ ...item, idFeed }));
+        handleFeed(posts, idFeed);
+      }));
+
+    Promise.all(feedsPromises)
+      .then(() => {
+        setTimeout(addNewPosts, 5000);
+      })
+      .finally(() => {
+        watchedState.updatingStatus = 'loading';
+      });
   };
 
-  const feedsPromises = watchedState.data.feeds.map(({ nameFeed, idFeed }) => getRSS(nameFeed)
-    .then((data) => {
-      const { transformXmlItem } = parseRSS(data);
-      // feed.newPosts = [];
-      const posts = transformXmlItem.map((item) => ({ ...item, idFeed }));
-      handleFeed(posts, idFeed);
-    }));
-
-  Promise.all(feedsPromises)
-    .then(() => {
-      setTimeout(addNewPosts, 5000);
-    })
-    .finally(() => {
-      watchedState.updatingStatus = 'loading';
-    });
-};
-
-export default () => {
   i18next.init({
     lng: 'ru',
     resources,
@@ -73,16 +92,16 @@ export default () => {
 
     const shemaUrl = yup.object({
       url: yup.string()
-        .required(i18next.t('errors.requiredUrl'))
-        .url(i18next.t('errors.incorrectUrl'))
+        .required('required')
+        .url('url')
         .test({
           name: 'is-url-added',
           skipAbsent: false,
           test(value, context) {
-            if (watchedState.data.feeds.nameFeed.includes(value)) {
-              return context.createError({ message: i18next.t('errors.duplicatedUrl') });
-            }
-            return true;
+            const findFeed = watchedState.data.feeds.filter(({ nameFeed }) => nameFeed === value);
+            return findFeed.length !== 0
+              ? context.createError({ message: 'duplicate' })
+              : true;
           },
         }),
     });
@@ -93,9 +112,9 @@ export default () => {
       const inputUrl = formData.get('url');
 
       watchedState.statusPage = 'loading';
-      watchedState.errorRSS = null;
-      watchedState.errorUrl = null;
-      watchedState.errorNetwork = null;
+      watchedState.errors.rss = null;
+      watchedState.errors.network = null;
+      watchedState.errors.url = null;
 
       shemaUrl.validate({ url: inputUrl })
         .then(() => {
@@ -106,20 +125,16 @@ export default () => {
               const idFeed = uniqueId();
               const activeFeed = { nameFeed: inputUrl, idFeed, ...feed };
               watchedState.data.feeds.push(activeFeed);
-              // feed.newPosts = [];
               const posts = transformXmlItem.map((item) => ({ ...item, idFeed }));
 
               watchedState.data.posts = [...posts, ...watchedState.data.posts];
               watchedState.data.activeFeed = { ...activeFeed };
 
-              // console.log('parsing', posts, activeFeed, 'state', watchedState.data.posts, 'active', watchedState.data.activeFeed);
-
               watchedState.statusPage = 'success';
             })
             .catch((error) => {
               if (error.name === 'incorrectRSS') {
-                watchedState.statusPage = 'errorRSS';
-                watchedState.errorRSS = i18next.t('errors.incorrectRSS');
+                watchedState.statusPage = 'errors.rss';
                 return;
               }
 
@@ -127,9 +142,18 @@ export default () => {
             });
         })
         .catch((err) => {
-          watchedState.statusPage = 'errorUrl';
-          watchedState.errorUrl = err.message;
+          watchedState.statusPage = 'errors.url';
+          watchedState.errors.url = err.message;
         });
+    });
+    document.getElementById('posts').addEventListener('click', (event) => {
+      const { target } = event;
+
+      if (target.tagName !== 'BUTTON') {
+        return;
+      }
+      const titlePost = target.getAttribute('data-title');
+      watchedState.data.modalData = titlePost;
     });
 
     addNewPosts();
