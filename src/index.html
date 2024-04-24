@@ -28,10 +28,10 @@
             </div>
         </div>
     </div>
-    <div class="container-1 bg-danger bg-opacity-50 py-5 px-5 mx-auto row">
+    <div class="container-1 bg-danger bg-opacity-75 py-5 px-5 mx-auto row">
         <div class="col-md-10 col-lg-8 mx-auto text-white">
-            <h1 id="title" class="display-1">RSS агрегатор</h1>
-            <h2 id="subTitle" class="h4">Начните читать RSS сегодня! Это легко, это красиво.</h2>
+            <h1 id="title" class="display-1 font-monospace">RSS агрегатор</h1>
+            <h2 id="subTitle" class="h5 font-monospace">Начните читать RSS сегодня! Это легко, это красиво.</h2>
             <div class="container p-0">
                 <form action="">
                     <div class="row">
@@ -43,29 +43,29 @@
                             </div>
                         </div>
                         <div class="col-auto">
-                            <button type='submit' class='btn btn-outline-light btn-lg h-100'>
+                            <button type='submit' class='btn btn-outline-light btn-lg h-100 font-monospace'>
                                 <span id="spiner" class="spinner-grow spinner-grow-sm d-none" aria-hidden="true"></span>
                                 <span role="status"></span>
                             </button>
                         </div>
                     </div>
                 </form>
-                <p class="mt-1 mb-0 small text-white">Пример: https://lorem-rss.hexlet.app/feed</p>
-                <p id='rssSuccess' class="text-success small mt-1 invisible feedback m-0 position-absolute">
+                <p class="mt-1 mb-0 small font-monospace text-white">Пример: https://lorem-rss.hexlet.app/feed</p>
+                <p id='rssSuccess' class="font-monospace small mt-1 invisible feedback m-0 position-absolute" style="color: rgb(8, 87, 8);">
                     RSS успешно загружен
                 </p>
-                <p id='rssError' class="text-danger small mt-1 invisible position-absolute"></p>
+                <p id='rssError' class="font-monospace small mt-1 invisible position-absolute" style="color: rgb(105, 16, 16);"></p>
             </div>
         </div>
     </div>
     <div class="container-2 row px-5 py-5 m-0">
         <div class="col-7">
-            <h2 id="postH2" class="card-body px-3 d-none">Посты</h2>
+            <h2 id="postH2" class="card-body px-3 d-none font-monospace">Посты</h2>
             <ul id="posts" class="list-group list-group-flush">
             </ul>
         </div>
         <div class="col">
-            <h2 id="feedH2" class="card-body d-none">Фиды</h2>
+            <h2 id="feedH2" class="card-body d-none font-monospace">Фиды</h2>
             <div id="feeds" class="">
             </div>
         </div>
