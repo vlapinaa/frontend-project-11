@@ -2,11 +2,13 @@ const parseRSS = (data) => {
   const parser = new DOMParser();
   const xml = parser.parseFromString(data.contents, 'text/xml');
   const errorNode = xml.querySelector('parsererror');
+
   if (errorNode) {
     const parsingError = new Error('incorrect RSS');
     parsingError.name = 'incorrectRSS';
     throw parsingError;
   }
+
   const items = xml.querySelectorAll('item');
   const transformXmlItem = Array.from(items).map((item) => ({
     title: item.querySelector('title')?.textContent || 'Title',
