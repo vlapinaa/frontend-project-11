@@ -6,7 +6,7 @@ export const generatePost = (post) => {
       <p class="text-body-secondary small font-monospace">
         ${date.toDateString()}
       </p>
-      <a href="${post.link}" target="_blank" class="fw-bold font-monospace" style="display: block">
+      <a href="${post.link}" target="_blank" class="fw-bold" style="display: block">
         ${post.title}
       </a>
       <button 
