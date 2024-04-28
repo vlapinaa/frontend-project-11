@@ -4,18 +4,20 @@ import { generatePosts, generateFeeds } from './generation';
 
 const INPUT_SELECTOR = 'input[name="url"]';
 
-const handleErrors = (errors) => {
+const handleError = (error) => {
   const errorMessage = document.getElementById('rssError');
   const input = document.querySelector(INPUT_SELECTOR);
 
   input.classList.remove('is-invalid');
   errorMessage.classList.add('invisible');
-  errors.forEach((error) => {
-    if (error) {
-      errorMessage.classList.remove('invisible');
-      errorMessage.textContent = error;
-    }
-  });
+  // errors.forEach((error) => {
+  //   if (error) {
+  //     errorMessage.classList.remove('invisible');
+  //     errorMessage.textContent = error;
+  //   }
+  // });
+  errorMessage.classList.remove('invisible');
+  errorMessage.textContent = error;
 };
 
 const handleSuccess = (status) => {
@@ -29,21 +31,14 @@ const handleSuccess = (status) => {
   }
 };
 
-const form = document.querySelector('form');
-
 const someImportWatchFn = (state, path, value) => {
+  const form = document.querySelector('form');
   const input = document.querySelector(INPUT_SELECTOR);
   const submit = document.querySelector('button[type="submit"]');
   const buttonSent = document.querySelector('span[role="status"]');
 
-  submit.disabled = false;
-
-  if (path === 'data.newPosts') {
-    generatePosts(value, state.data.modalData);
-  }
-
-  if (path === 'data.modalData') {
-    const post = state.data.posts.find(({ title }) => title === value);
+  if (path === 'uiState.modalData') {
+    const post = state.posts.find(({ title }) => title === value);
 
     const modalContent = document.querySelector('.modal-body');
     const modalLink = document.querySelector('.modal-link');
@@ -59,6 +54,7 @@ const someImportWatchFn = (state, path, value) => {
   switch (state.statusPage) {
     case 'waiting':
       input.focus();
+      submit.disabled = false;
       break;
 
     case 'loading':
@@ -68,13 +64,14 @@ const someImportWatchFn = (state, path, value) => {
       break;
 
     case 'success':
-      if (state.data.activeFeed !== null) {
-        const posts = state.data.posts
-          .filter((post) => post.idFeed === state.data.activeFeed.idFeed);
-        generatePosts(posts, state.data.modalData);
-        generateFeeds(state.data.activeFeed);
+      submit.disabled = false;
+      if (state.activeFeed !== null) {
+        const posts = state.posts
+          .filter((post) => post.idFeed === state.activeFeed.idFeed);
+        generatePosts(posts);
+        generateFeeds(state.activeFeed);
         // eslint-disable-next-line no-param-reassign
-        state.data.activeFeed = null;
+        state.activeFeed = null;
       }
 
       input.focus();
@@ -83,23 +80,25 @@ const someImportWatchFn = (state, path, value) => {
       form.reset();
       break;
 
+    case 'update':
+      submit.disabled = false;
+      generatePosts(state.posts);
+      break;
+
     case 'errors.url':
       document.getElementById('spiner').classList.add('d-none');
       buttonSent.textContent = i18next.t('submitButton');
       switch (value) {
         case 'required':
-          // eslint-disable-next-line no-param-reassign
-          state.errors.url = i18next.t('errors.requiredUrl');
+          handleError(i18next.t('errors.requiredUrl'));
           break;
 
         case 'url':
-          // eslint-disable-next-line no-param-reassign
-          state.errors.url = i18next.t('errors.incorrectUrl');
+          handleError(i18next.t('errors.incorrectUrl'));
           break;
 
         case 'duplicate':
-          // eslint-disable-next-line no-param-reassign
-          state.errors.url = i18next.t('errors.duplicatedUrl');
+          handleError(i18next.t('errors.duplicatedUrl'));
           break;
 
         default:
@@ -108,27 +107,20 @@ const someImportWatchFn = (state, path, value) => {
       break;
 
     case 'errors.network':
-      // eslint-disable-next-line no-param-reassign
-      state.errors.network = i18next.t('errors.network');
+      handleError(i18next.t('errors.network'));
       break;
 
     case 'errors.rss':
-      // eslint-disable-next-line no-param-reassign
-      state.errors.rss = i18next.t('errors.incorrectRSS');
+      handleError(i18next.t('errors.incorrectRSS'));
       break;
 
     default:
       break;
   }
 
-  handleErrors([
-    state.errors.rss,
-    state.errors.network,
-    state.errors.url,
-  ]);
   handleSuccess(state.statusPage);
 
-  if (state.data.feeds.length !== 0) {
+  if (state.feeds.length !== 0) {
     document.getElementById('postH2').classList.remove('d-none');
     document.getElementById('feedH2').classList.remove('d-none');
   }

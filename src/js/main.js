@@ -2,7 +2,7 @@ import 'bootstrap';
 import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
-import { uniqueId } from 'lodash';
+import { uniqueId, update } from 'lodash';
 import onChange from 'on-change';
 
 import '../scss/styles.scss';
@@ -12,15 +12,12 @@ import resources from '../locales/ru';
 
 export default () => {
   const state = {
-    // error loading success waiting
+    // error loading success waiting update
     statusPage: 'waiting',
-    // waiting, loading
-    updatingStatus: 'waiting',
-    data: {
-      activeFeed: null,
-      feeds: [],
-      posts: [],
-      newPosts: [],
+    activeFeed: null,
+    feeds: [],
+    posts: [],
+    uiState: {
       modalData: null,
     },
     errors: {
@@ -46,7 +43,8 @@ export default () => {
 
   const addNewPosts = () => {
     const handleFeed = (posts, idFeedNow) => {
-      const oldPosts = watchedState.data.posts.filter((post) => post.idFeed === idFeedNow);
+      watchedState.statusPage = 'waiting';
+      const oldPosts = watchedState.posts.filter((post) => post.idFeed === idFeedNow);
       const lastPost = oldPosts[0];
       const lastPostDate = new Date(lastPost.publicationDate);
       const feedPosts = posts;
@@ -56,18 +54,18 @@ export default () => {
         return lastPostDate.getTime() < pubDate.getTime();
       });
       if (newPosts.length !== 0) {
-        watchedState.data.newPosts = newPosts;
-        watchedState.data.posts = [
+        watchedState.statusPage = 'update';
+        watchedState.posts = [
           ...newPosts,
-          ...watchedState.data.posts,
+          ...watchedState.posts,
         ];
       }
     };
 
-    const feedsPromises = watchedState.data.feeds.map(({ nameFeed, idFeed }) => getRSS(nameFeed)
+    const feedsPromises = watchedState.feeds.map(({ nameFeed, idFeed }) => getRSS(nameFeed)
       .then((data) => {
-        const { transformXmlItem } = parseRSS(data);
-        const posts = transformXmlItem.map((item) => ({ ...item, idFeed }));
+        const { items } = parseRSS(data);
+        const posts = items.map((item) => ({ ...item, idFeed }));
         handleFeed(posts, idFeed);
       }));
 
@@ -76,7 +74,10 @@ export default () => {
         setTimeout(addNewPosts, 5000);
       })
       .finally(() => {
-        watchedState.updatingStatus = 'loading';
+        watchedState.statusPage = 'update';
+      })
+      .catch((err) => {
+        throw new Error(`Error update: ${err}`);
       });
   };
 
@@ -98,7 +99,7 @@ export default () => {
           name: 'is-url-added',
           skipAbsent: false,
           test(value, context) {
-            const findFeed = watchedState.data.feeds.filter(({ nameFeed }) => nameFeed === value);
+            const findFeed = watchedState.feeds.filter(({ nameFeed }) => nameFeed === value);
             return findFeed.length !== 0
               ? context.createError({ message: 'duplicate' })
               : true;
@@ -120,15 +121,17 @@ export default () => {
         .then(() => {
           getRSS(inputUrl)
             .then((data) => {
-              const { transformXmlItem, feed } = parseRSS(data);
+              const { items, title, description } = parseRSS(data);
 
               const idFeed = uniqueId();
-              const activeFeed = { nameFeed: inputUrl, idFeed, ...feed };
-              watchedState.data.feeds.push(activeFeed);
-              const posts = transformXmlItem.map((item) => ({ ...item, idFeed }));
+              const activeFeed = {
+                nameFeed: inputUrl, idFeed, title, description,
+              };
+              watchedState.feeds.push(activeFeed);
+              const posts = items.map((item) => ({ ...item, idFeed }));
 
-              watchedState.data.posts = [...posts, ...watchedState.data.posts];
-              watchedState.data.activeFeed = { ...activeFeed };
+              watchedState.posts = [...posts, ...watchedState.posts];
+              watchedState.activeFeed = { ...activeFeed };
 
               watchedState.statusPage = 'success';
             })
@@ -153,7 +156,7 @@ export default () => {
         return;
       }
       const titlePost = target.getAttribute('data-title');
-      watchedState.data.modalData = titlePost;
+      watchedState.uiState.modalData = titlePost;
     });
 
     addNewPosts();

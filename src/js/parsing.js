@@ -14,15 +14,14 @@ const parseRSS = (data) => {
     title: item.querySelector('title')?.textContent || 'Title',
     description: item.querySelector('description')?.textContent ?? 'Description',
     link: item.querySelector('link')?.textContent || 'Link',
-    publicationDate: item.querySelector('pubDate')?.textContent || 'Publication date',
+    pubDate: item.querySelector('pubDate')?.textContent || 'Publication date',
   }));
 
-  const feed = {
-    title: xml.querySelector('title').textContent,
-    description: xml.querySelector('description').textContent,
+  return {
+    title: xml.querySelector('title')?.textContent || 'TitleFeed',
+    description: xml.querySelector('description')?.textContent || 'DescriptionFeed',
+    items: transformXmlItem,
   };
-
-  return { transformXmlItem, feed };
 };
 
 export default parseRSS;

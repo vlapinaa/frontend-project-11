@@ -46,10 +46,10 @@ export const generateFeeds = (feed) => {
   containerFeed.prepend(cardBodyFeed);
 };
 
-export const generatePosts = (posts, watchedState) => {
+export const generatePosts = (posts) => {
   const containerPost = document.getElementById('posts');
 
   [...posts].reverse().forEach((post) => {
-    containerPost.prepend(generatePost(post, watchedState));
+    containerPost.prepend(generatePost(post));
   });
 };
