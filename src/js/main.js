@@ -2,7 +2,7 @@ import 'bootstrap';
 import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
-import { uniqueId, update } from 'lodash';
+import { uniqueId } from 'lodash';
 import onChange from 'on-change';
 
 import '../scss/styles.scss';

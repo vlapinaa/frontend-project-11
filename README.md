@@ -18,7 +18,6 @@
 
 🔶 Используйте свой любимый RSS Feed
 
-
 [![add-link.png](https://i.postimg.cc/gJ2RVqKy/add-link.png)](https://postimg.cc/Y4ThkFZj)
 
 🔶 И читайте понравившиеся посты
@@ -34,13 +33,13 @@
 [![view-2-RSS.png](https://i.postimg.cc/ZYg3NNv3/view-2-RSS.png)](https://postimg.cc/5jB6d63N)
 
 ## Используемый стек технологий 
- JavaScript, Bootstrap, ESLint, GitHub Actions (CI), Webpack, Yup, on-change, i18next, Axios, All Origins, Lodash
+ JavaScript, Bootstrap, ESLint, GitHub Actions (CI), Webpack, Yup, on-change, i18next, Axios, Lodash
 
 ## Установка для разработчиков
 * Клонируйте репозиторий с помощью следующей команды:  
 
 ``
-git clone 
+git clone git@github.com:vlapinaa/frontend-project-11.git
 ``
 
 * Установите программу чтения RSS, используя следующие команды:
