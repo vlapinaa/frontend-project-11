@@ -10,12 +10,6 @@ const handleError = (error) => {
 
   input.classList.remove('is-invalid');
   errorMessage.classList.add('invisible');
-  // errors.forEach((error) => {
-  //   if (error) {
-  //     errorMessage.classList.remove('invisible');
-  //     errorMessage.textContent = error;
-  //   }
-  // });
   errorMessage.classList.remove('invisible');
   errorMessage.textContent = error;
 };
@@ -51,6 +45,11 @@ const someImportWatchFn = (state, path, value) => {
     modalTitle.textContent = post.title;
   }
 
+  if (state.statusUpdate === 'update') {
+    submit.disabled = false;
+    generatePosts(state.posts);
+  }
+
   switch (state.statusPage) {
     case 'waiting':
       input.focus();
@@ -70,8 +69,6 @@ const someImportWatchFn = (state, path, value) => {
           .filter((post) => post.idFeed === state.activeFeed.idFeed);
         generatePosts(posts);
         generateFeeds(state.activeFeed);
-        // eslint-disable-next-line no-param-reassign
-        state.activeFeed = null;
       }
 
       input.focus();
@@ -80,38 +77,10 @@ const someImportWatchFn = (state, path, value) => {
       form.reset();
       break;
 
-    case 'update':
-      submit.disabled = false;
-      generatePosts(state.posts);
-      break;
-
-    case 'errors.url':
+    case 'error':
       document.getElementById('spiner').classList.add('d-none');
       buttonSent.textContent = i18next.t('submitButton');
-      switch (value) {
-        case 'required':
-          handleError(i18next.t('errors.requiredUrl'));
-          break;
-
-        case 'url':
-          handleError(i18next.t('errors.incorrectUrl'));
-          break;
-
-        case 'duplicate':
-          handleError(i18next.t('errors.duplicatedUrl'));
-          break;
-
-        default:
-          break;
-      }
-      break;
-
-    case 'errors.network':
-      handleError(i18next.t('errors.network'));
-      break;
-
-    case 'errors.rss':
-      handleError(i18next.t('errors.incorrectRSS'));
+      handleError(i18next.t(`errors.${state.error}`));
       break;
 
     default:

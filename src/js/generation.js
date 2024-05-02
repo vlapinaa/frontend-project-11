@@ -1,7 +1,7 @@
 export const generatePost = (post) => {
   const postCard = document.createElement('li');
   postCard.classList.add('list-group-item');
-  const date = new Date(post.publicationDate);
+  const date = new Date(post.pubDate);
   const postHTML = `
       <p class="text-body-secondary small font-monospace">
         ${date.toDateString()}
@@ -48,6 +48,7 @@ export const generateFeeds = (feed) => {
 
 export const generatePosts = (posts) => {
   const containerPost = document.getElementById('posts');
+  containerPost.innerHTML = '';
 
   [...posts].reverse().forEach((post) => {
     containerPost.prepend(generatePost(post));

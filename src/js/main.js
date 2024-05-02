@@ -19,12 +19,10 @@ export default () => {
     posts: [],
     uiState: {
       modalData: null,
+      // waiting update
+      statusUpdate: 'waiting',
     },
-    errors: {
-      rss: null,
-      network: null,
-      url: null,
-    },
+    error: null,
   };
   const watchedState = onChange(state, (path, value) => {
     someImportWatchFn(state, path, value);
@@ -38,27 +36,31 @@ export default () => {
   })
     .then((response) => response.data)
     .catch(() => {
-      watchedState.statusPage = 'errors.network';
+      watchedState.statusPage = 'error';
+      watchedState.error = 'network';
     });
 
-  const addNewPosts = () => {
+  const updatingPosts = () => {
     const handleFeed = (posts, idFeedNow) => {
-      watchedState.statusPage = 'waiting';
+      watchedState.statusUpdate = 'waiting';
       const oldPosts = watchedState.posts.filter((post) => post.idFeed === idFeedNow);
       const lastPost = oldPosts[0];
-      const lastPostDate = new Date(lastPost.publicationDate);
+      if (!lastPost) {
+        return;
+      }
+      const lastPostDate = new Date(lastPost.pubDate);
       const feedPosts = posts;
 
       const newPosts = feedPosts.filter((item) => {
-        const pubDate = new Date(item.publicationDate);
+        const pubDate = new Date(item.pubDate);
         return lastPostDate.getTime() < pubDate.getTime();
       });
       if (newPosts.length !== 0) {
-        watchedState.statusPage = 'update';
         watchedState.posts = [
           ...newPosts,
           ...watchedState.posts,
         ];
+        watchedState.statusUpdate = 'update';
       }
     };
 
@@ -71,10 +73,7 @@ export default () => {
 
     Promise.all(feedsPromises)
       .then(() => {
-        setTimeout(addNewPosts, 5000);
-      })
-      .finally(() => {
-        watchedState.statusPage = 'update';
+        setTimeout(updatingPosts, 5000);
       })
       .catch((err) => {
         throw new Error(`Error update: ${err}`);
@@ -93,15 +92,15 @@ export default () => {
 
     const shemaUrl = yup.object({
       url: yup.string()
-        .required('required')
-        .url('url')
+        .required('requiredUrl')
+        .url('incorrectUrl')
         .test({
           name: 'is-url-added',
           skipAbsent: false,
           test(value, context) {
             const findFeed = watchedState.feeds.filter(({ nameFeed }) => nameFeed === value);
             return findFeed.length !== 0
-              ? context.createError({ message: 'duplicate' })
+              ? context.createError({ message: 'duplicatedUrl' })
               : true;
           },
         }),
@@ -113,9 +112,7 @@ export default () => {
       const inputUrl = formData.get('url');
 
       watchedState.statusPage = 'loading';
-      watchedState.errors.rss = null;
-      watchedState.errors.network = null;
-      watchedState.errors.url = null;
+      watchedState.error = null;
 
       shemaUrl.validate({ url: inputUrl })
         .then(() => {
@@ -134,10 +131,12 @@ export default () => {
               watchedState.activeFeed = { ...activeFeed };
 
               watchedState.statusPage = 'success';
+              watchedState.activeFeed = null;
             })
             .catch((error) => {
               if (error.name === 'incorrectRSS') {
-                watchedState.statusPage = 'errors.rss';
+                watchedState.statusPage = 'error';
+                watchedState.error = 'incorrectRSS';
                 return;
               }
 
@@ -145,8 +144,8 @@ export default () => {
             });
         })
         .catch((err) => {
-          watchedState.statusPage = 'errors.url';
-          watchedState.errors.url = err.message;
+          watchedState.statusPage = 'error';
+          watchedState.error = err.message;
         });
     });
     document.getElementById('posts').addEventListener('click', (event) => {
@@ -159,6 +158,6 @@ export default () => {
       watchedState.uiState.modalData = titlePost;
     });
 
-    addNewPosts();
+    updatingPosts();
   });
 };
